@@ -15,6 +15,8 @@ DeepSeek Harness Web 客户端插件，为当前会话提供右侧「提问锚�
 - 支持中英文，并跟随 DSH 界面语言
 - 自动适配深色和浅色主题
 
+![image1](./assets/image.png)
+
 ## 安装
 
 在项目目录执行：
