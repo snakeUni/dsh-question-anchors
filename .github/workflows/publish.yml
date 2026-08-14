@@ -1,14 +1,6 @@
-# Publish to npm on every push to main.
-#
-# Setup (one time):
-#   1. Create the GitHub repository and push this branch to `main`.
-#   2. Generate an npm access token (npmjs.com → Access Tokens → Generate
-#      New Token → "Publish" scope) and add it as a repository secret named
-#      `NPM_TOKEN` (Settings → Secrets and variables → Actions).
-#   3. Before pushing a release, bump `version` in package.json — npm never
-#      allows overwriting an existing version, and the workflow skips runs
-#      whose version is already published (so a re-push of an unchanged
-#      version is a no-op, not a red X).
+# Publish to npm on every push to main using Trusted Publishing (OIDC).
+# Configure npmjs.com with the GitHub repository and this workflow filename
+# (`publish.yml`) before running a release.
 #
 # The workflow does not need `npm ci`/`npm install`: the package has no
 # runtime dependencies (only peerDependencies), so `npm publish` runs
@@ -21,18 +13,23 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org/
+          package-manager-cache: false
 
       - name: Read package version
         id: pkg
@@ -51,6 +48,4 @@ jobs:
 
       - name: Publish to npm
         if: steps.published.outputs.published == 'false'
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish

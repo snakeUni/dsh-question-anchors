@@ -34,5 +34,13 @@
     "@deepseek-ai/cordis": "^4.0.1",
     "react": "^18.2.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snakeUni/dsh-question-anchors.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "license": "MIT"
 }
