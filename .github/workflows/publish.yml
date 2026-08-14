@@ -42,9 +42,9 @@ jobs:
         id: published
         run: |
           VERSION="${{ steps.pkg.outputs.version }}"
-          if npm view "dsh-client-ui-question-anchors@${VERSION}" version >/dev/null 2>&1; then
+          if npm view "@dsh-client/ui-question-anchors@${VERSION}" version >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::dsh-client-ui-question-anchors@${VERSION} already published — nothing to do"
+            echo "::notice::@dsh-client/ui-question-anchors@${VERSION} already published — nothing to do"
           else
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi

@@ -1,4 +1,4 @@
-# dsh-client-ui-question-anchors
+# @dsh-client/ui-question-anchors
 
 DeepSeek Harness Web 客户端插件：**右侧提问锚点面板**。
 
@@ -53,13 +53,13 @@ dsh-question-anchors/
 
 安装脚本做两件事（均幂等，可重复执行）：
 
-1. `node_modules/dsh-client-ui-question-anchors` → 软链到本目录
+1. `node_modules/@dsh-client/ui-question-anchors` → 软链到本目录
 2. 向 profile 的 `cordis.patch.yml`（`$DSH_HOME/profiles/web/cordis.patch.yml`，默认即 `~/.dsh/profiles/web/cordis.patch.yml`）追加一行插件行：
 
 ```yaml
 - insert:
     - id: ui-question-anchors
-      name: 'dsh-client-ui-question-anchors'
+      name: '@dsh-client/ui-question-anchors'
 ```
 
 ## 卸载
@@ -77,15 +77,14 @@ npm login                       # 需要 npm 账号；私有 registry 先 npm co
 npm publish                     # scoped 包（@yourname/...）加 --access public
 ```
 
-> ⚠️ 若改成 scoped 包名，**必须同步修改** `lib/client.js` 里
-> `window.__ModuleLoader__.load({ id: "dsh-client-ui-question-anchors", ... })` 的
-> `id` 为新的包名——引导图条目 id 就是包名，二者不一致时浏览器会报
-> "bundle loaded without registering"。
+> ⚠️ **包名 = 引导图条目 id = `lib/client.js` 里 `__ModuleLoader__.load({ id })`，三者必须严格一致**（当前为 `@dsh-client/ui-question-anchors`），不一致时浏览器会报 "bundle loaded without registering"。改名时三处同步。
+>
+> ⚠️ 发布到公共 npm 时，**`@dsh-client` 这个 scope 必须归你的账号所有**（npmjs.com → New Organization，免费创建），否则 `npm publish` 会因 scope 权限报错。
 
 安装到任意机器 / 任意 profile：
 
 ```sh
-dsh plugin --profile web add dsh-client-ui-question-anchors
+dsh plugin --profile web add @dsh-client/ui-question-anchors
 ```
 
 然后在该 profile 的 `cordis.patch.yml` 追加插件行（只装包不会注册到 Loader）：
@@ -93,7 +92,7 @@ dsh plugin --profile web add dsh-client-ui-question-anchors
 ```yaml
 - insert:
     - id: ui-question-anchors
-      name: 'dsh-client-ui-question-anchors'
+      name: '@dsh-client/ui-question-anchors'
 ```
 
 最后重启 dsh web 并硬刷新页面。
