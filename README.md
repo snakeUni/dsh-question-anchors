@@ -1,150 +1,71 @@
 # @dsh-client/ui-question-anchors
 
-DeepSeek Harness Web 客户端插件：**右侧提问锚点面板**。
+DeepSeek Harness Web 客户端插件，为当前会话提供右侧「提问锚点」面板，帮助用户快速浏览和定位历史提问。
 
-在当前会话的对话中，把每一个用户提问（`user` / `steering` 消息）收集为右侧浮动面板中的一个锚点条目，显示提问序号和文字预览。点击条目，聊天区平滑滚动到对应提问处并短暂高亮该消息；滚动聊天区时面板会同步高亮当前所在提问（scroll-spy）。面板可收起为右侧的小圆钮，圆钮上实时显示提问数量。
+插件会收集会话中的用户消息（`user` 和 `steering`），并将其展示为可点击的锚点。点击锚点后，聊天区会平滑滚动到对应消息并短暂高亮；滚动聊天内容时，面板也会自动标记当前阅读位置。
 
-## 效果
+## 功能
 
-- 右侧浮动卡片：标题「提问锚点」+ 提问计数 + 收起按钮
-- 每个条目：序号 + 提问文字预览（最多 3 行）
-- 点击条目：`scrollIntoView` 式平滑滚动 + 2px 品牌色描边闪烁 1.6s
-- 滚动聊天区：自动高亮当前阅读位置的提问
-- 收起后：40px 圆钮，带提问数量徽标
-- 无会话或无提问时不显示
-- 右侧详情面板打开时自动让位（测量 `data-details-collapsed` + details 列宽度）
-- 中英双语（跟随 dsh 界面语言，缺省回退中文）
-
-## 架构
-
-纯浏览器插件（host 半场为空桩），复用现有 DSH 客户端机制，无任何侵入式改动：
-
-- 通过 `dsh.client` 声明被 `@deepseek-ai/dsh-client-modules` 扫描进 `window.__DSH_BOOT__` 引导图
-- 注册进布局壳声明的 **`shell.overlay`**（root 作用域 list 槽）——AppFrame 专为浮动 UI 提供的覆盖层（`position:absolute; inset:0; z-index:20`，`pointer-events:none`，面板自身 `pointer-events:auto`）
-- 数据源：`ctx.sessions.binding(sessionId).session`（`ObservableSnapshot<ConversationSnapshot>`，与 `useSession` 同一来源），经注册时的 inject 工厂注入组件，组件用 `useSyncExternalStore` 订阅当前会话
-- 当前会话 id：标准套件 `useSessions(s => s.current)`（root 作用域自带）
-- 锚点键：`snapshot.chat.order` + `chat.nodes.get(key)`，筛选 `kind === 'user' | 'steering'`；DOM 行由 `[data-chat-anchor-key]` 标识（与 `data-chat-flow-key` 同源，均为 Conversation Context key），滚动用 `[data-conversation-scroll]` 滚动容器 + `getBoundingClientRect` 差值计算，与 `ui-conversation` 内置逻辑一致
-- 样式：自带 `<style data-plugin-css>` 标签注入（materialization 时创建，HMR 可回收），全部使用 `--dsw-alias-*` / `--dsw-shadow-lv2` 设计 token，自动适配深浅主题
-
-## 文件
-
-```
-dsh-question-anchors/
-├── package.json          # dsh.client 声明（platform: web, inject 依赖边）
-├── lib/
-│   ├── index.js          # host 半场（空桩）
-│   └── client.js         # 浏览器插件（__ModuleLoader__.load 格式，无需构建）
-├── scripts/
-│   └── install.sh        # 安装到 web profile（幂等）
-└── README.md
-```
-
-客户端 bundle 是手写的 `window.__ModuleLoader__.load({id, factory})` 格式（与仓库内其他 `lib/client.js` 产物一致），只 `require` 平台 seed 词（`react`、`react/jsx-runtime`），因此**不需要 tsdown/构建步骤**。
+- 展示提问序号和文字预览，单条最多显示 3 行
+- 点击锚点后平滑滚动到对应消息并短暂高亮
+- 根据聊天区滚动位置自动切换当前锚点
+- 支持收起为带提问数量徽标的悬浮按钮
+- 无会话或无提问时自动隐藏
+- 右侧详情面板打开时自动调整位置，避免重叠
+- 支持中英文，并跟随 DSH 界面语言
+- 自动适配深色和浅色主题
 
 ## 安装
 
+在项目目录执行：
+
 ```sh
-# 1. 把插件挂进 web profile（软链到 profile 的 node_modules，源目录保持唯一）
 ./scripts/install.sh
-
-# 2. 重启 dsh web（插件集变更需重启；热更新链只覆盖已存在的 bundle 内容变更）
-#    重启 dsh web 服务后刷新页面生效
 ```
 
-安装脚本做两件事（均幂等，可重复执行）：
+安装脚本会：
 
-1. `node_modules/@dsh-client/ui-question-anchors` → 软链到本目录
-2. 向 profile 的 `cordis.patch.yml`（`$DSH_HOME/profiles/web/cordis.patch.yml`，默认即 `~/.dsh/profiles/web/cordis.patch.yml`）追加一行插件行：
+1. 在 Web profile 的 `node_modules` 中创建指向当前项目的软链接。
+2. 将插件配置写入 Web profile 的 `cordis.patch.yml`。
 
-```yaml
-- insert:
-    - id: ui-question-anchors
-      name: '@dsh-client/ui-question-anchors'
-```
+默认 Web profile 位于 `~/.dsh/profiles/web`。如需使用其他 profile，可在执行脚本前设置 `DSH_PROFILE_DIR`。
+
+安装完成后，重启 DSH Web 服务并刷新页面。插件集合发生变化时必须重启服务，仅修改现有客户端代码时可继续使用热更新。
 
 ## 卸载
 
-删除 `cordis.patch.yml` 里对应的 insert 行，删除 profile node_modules 里的软链，重启即可。
+1. 从 Web profile 的 `cordis.patch.yml` 中删除 `ui-question-anchors` 对应配置。
+2. 删除 `node_modules/@dsh-client/ui-question-anchors` 软链接。
+3. 重启 DSH Web 服务并刷新页面。
 
-## 发布插件
+## 实现方式
 
-插件就是一个标准 npm 包（`dsh.client` 声明 + `exports["./client"]` 客户端 bundle），发布流程与普通 npm 包一致。
+该插件是纯浏览器客户端插件，不修改 DSH 源码：
 
-### 方案 A：发布到 npm registry
+- 通过 `dsh.client` 声明注册到 DSH 客户端模块系统
+- 使用布局提供的 `shell.overlay` 插槽渲染浮动面板
+- 订阅当前会话的 `ObservableSnapshot<ConversationSnapshot>` 获取消息变化
+- 根据 `snapshot.chat.order` 和 `chat.nodes` 提取用户提问
+- 通过 `[data-chat-anchor-key]` 定位消息，通过 `[data-conversation-scroll]` 监听滚动容器
+- 使用 DSH 设计令牌适配主题和界面样式
 
-```sh
-npm login                       # 需要 npm 账号；私有 registry 先 npm config set registry <url>
-npm publish                     # scoped 包（@yourname/...）加 --access public
+客户端入口采用 `window.__ModuleLoader__.load(...)` 格式，仅依赖平台提供的 React 运行时，无需额外构建。
+
+## 项目结构
+
+```text
+dsh-question-anchors/
+├── lib/
+│   ├── index.js       # Host 端入口
+│   └── client.js      # 浏览器插件
+├── scripts/
+│   └── install.sh     # 本地安装脚本
+├── package.json       # 插件声明与依赖配置
+└── README.md
 ```
-
-> ⚠️ **包名 = 引导图条目 id = `lib/client.js` 里 `__ModuleLoader__.load({ id })`，三者必须严格一致**（当前为 `@dsh-client/ui-question-anchors`），不一致时浏览器会报 "bundle loaded without registering"。改名时三处同步。
->
-> ⚠️ 发布到公共 npm 时，**`@dsh-client` 这个 scope 必须归你的账号所有**（npmjs.com → New Organization，免费创建），否则 `npm publish` 会因 scope 权限报错。
-
-安装到任意机器 / 任意 profile：
-
-```sh
-dsh plugin --profile web add @dsh-client/ui-question-anchors
-```
-
-然后在该 profile 的 `cordis.patch.yml` 追加插件行（只装包不会注册到 Loader）：
-
-```yaml
-- insert:
-    - id: ui-question-anchors
-      name: '@dsh-client/ui-question-anchors'
-```
-
-最后重启 dsh web 并硬刷新页面。
-
-### 方案 B：不发 registry，直接分发 tarball
-
-```sh
-npm pack    # 生成 dsh-client-ui-question-anchors-0.1.0.tgz
-```
-
-把 tgz 发给对方，对方执行：
-
-```sh
-dsh plugin --profile web add /path/to/dsh-client-ui-question-anchors-0.1.0.tgz
-```
-
-同样追加 `cordis.patch.yml` 插件行并重启。
-
-### 方案 C：本地目录直装（开发期）
-
-```sh
-dsh plugin --profile web add file:/path/to/dsh-question-anchors
-```
-
-同样追加 `cordis.patch.yml` 插件行并重启。
-
-### 自动发布：GitHub Actions
-
-仓库内置 `.github/workflows/publish.yml`：**推送到 `main` 分支自动触发 `npm publish`**（也支持手动 `workflow_dispatch` 触发）。
-
-使用前提（一次性配置）：
-
-1. 把仓库推到 GitHub（`main` 分支）
-2. 在 npmjs.com 生成 **Publish 权限**的 Access Token，添加到仓库 Secrets，命名 `NPM_TOKEN`
-3. 发布新版本前先在 `package.json` 里 `version` +1 再推送——npm 不允许覆盖已存在的版本，工作流检测到当前版本已发布会直接跳过（重复推送是绿色 no-op，不是红叉）
-
-> 包无运行时依赖（仅 peerDependencies），工作流不需要 `npm ci`，直接 `npm publish`。
-
-### 发布检查清单
-
-- [x] `package.json` 无 `private: true`（已移除）
-- [x] `files: ["lib"]` —— tarball 只含 `lib/`、README、package.json（`npm pack --dry-run` 已验证）
-- [x] `dsh.client.platform: "web"` + `exports["./client"]` —— 客户端模块扫描入口
-- [x] `lib/client.js` 内 loader `id` 与包名一致（改名时注意同步）
-- [x] `peerDependencies`：`react`、`@deepseek-ai/cordis`
-- [ ] 更新版本号：npm 不允许同版本覆盖，迭代时改 `version` 再 `npm publish`
-- [ ] （可选）补充 `repository`、`author` 字段
-
-依赖说明：`dsh.client.inject` 引用的 `@deepseek-ai/dsh-client-*` 是 `dsh-web-app` bundle 自带依赖，任何 web profile 都能解析，无需额外安装。
 
 ## 已知限制
 
-- 插件行加入/移除需要重启 web 服务（`dsh-client-hmr` 只监听已存在 bundle 的内容变化，不监听插件集变化）
-- 轨迹视图（trajectory tab）下聊天行未渲染，点击锚点无目标可滚（面板仍在，行不存在时点击为空操作）
-- 面板宽度 252px，极小窗口下可能遮挡聊天内容（可自行收起）
+- 添加或移除插件后需要重启 DSH Web 服务。
+- 轨迹视图（trajectory tab）不会渲染聊天消息，锚点在该视图下无法定位目标。
+- 面板宽度为 252px，在较窄窗口中可能遮挡聊天内容，可将其收起。
