@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Local distribution artifacts
+*.tgz
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS noise
+.DS_Store

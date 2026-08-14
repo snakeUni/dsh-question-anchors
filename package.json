@@ -1,0 +1,38 @@
+{
+  "name": "dsh-client-ui-question-anchors",
+  "description": "DeepSeek Harness Web question-anchor plugin: a right-side floating panel listing every user question in the current conversation; clicking an item smoothly scrolls the chat to that message",
+  "version": "0.1.0",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "plugin",
+    "client",
+    "anchors",
+    "conversation"
+  ],
+  "type": "module",
+  "main": "lib/index.js",
+  "files": [
+    "lib"
+  ],
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-layout"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "react": "^18.2.0"
+  },
+  "license": "MIT"
+}
