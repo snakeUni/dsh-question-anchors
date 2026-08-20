@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>提问锚点 v2 设计稿 · 亮色 / 暗色</title>
+<style>
+  :root {
+    /* ── DSH 真实令牌值（亮色） ── */
+    --bg-page-light: #ffffff;
+    --bg-overlay-light: #ffffff;            /* dsw-specific-menu / bluish-00 */
+    --bg-hover-light: rgba(38,49,72,0.06);  /* interactive-bg-hover */
+    --bg-active-light: rgb(237,243,254);    /* state-business-tertiary = deepseek-50 */
+    --border-light: rgba(0,0,0,0.10);       /* border-l2 */
+    --border-strong-light: rgba(0,0,0,0.16);
+    --text-primary-light: rgb(15,17,21);    /* bluish-1000 */
+    --text-secondary-light: rgb(97,102,107);/* bluish-700 */
+    --text-tertiary-light: rgb(129,133,140);/* bluish-600 */
+    --text-caption-light: rgb(173,178,184); /* bluish-400 */
+    --brand-light: rgb(65,118,230);         /* deepseek-500 */
+    --brand-soft-light: rgb(228,237,253);   /* deepseek-100 */
+    --scrollbar-light: rgb(229,229,229);    /* neutral-200 */
+    --scrollbar-hover-light: rgb(212,212,212); /* neutral-300 */
+    --shadow-light: 0 0 1px 0 rgba(0,0,0,0.2), 0 0 4px 0 rgba(0,0,0,0.02), 0 12px 32px 0 rgba(0,0,0,0.08);
+
+    /* ── DSH 真实令牌值（暗色） ── */
+    --bg-page-dark: rgb(21,21,23);          /* bluish-950 */
+    --bg-overlay-dark: rgb(53,54,56);       /* bluish-800 */
+    --bg-hover-dark: rgba(255,255,255,0.08);/* interactive-bg-hover */
+    --bg-active-dark: rgb(52,65,91);        /* state-business-tertiary = deepseek-800 */
+    --border-dark: rgba(255,255,255,0.12);  /* border-l2 */
+    --border-strong-dark: rgba(255,255,255,0.20);
+    --text-primary-dark: rgb(249,250,251);  /* bluish-50 */
+    --text-secondary-dark: rgb(207,211,214);/* bluish-300 */
+    --text-tertiary-dark: rgb(173,178,184); /* bluish-400 */
+    --text-caption-dark: rgb(129,133,140);  /* bluish-600 */
+    --brand-dark: rgb(103,158,254);         /* deepseek-400 */
+    --brand-soft-dark: rgb(40,49,66);       /* deepseek-900 */
+    --scrollbar-dark: rgb(84,85,87);        /* neutral-600 */
+    --scrollbar-hover-dark: rgb(101,103,107);/* neutral-550 */
+    --shadow-dark: 0 0 1px 0 rgba(0,0,0,0.4), 0 0 4px 0 rgba(0,0,0,0.2), 0 12px 32px 0 rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #f0f1f3; color: #222; padding: 32px; }
+
+  .page-head { max-width: 960px; margin: 0 auto 28px; }
+  .page-head h1 { font-size: 22px; font-weight: 700; }
+  .page-head .sub { margin-top: 6px; font-size: 13px; color: #666; }
+  .page-head .badge { display:inline-block; margin-top:10px; padding: 3px 10px; border-radius: 999px; background:#e8edf5; color:#4176e6; font-size:12px; font-weight:600; }
+
+  /* 变更说明 */
+  .changes { max-width: 960px; margin: 0 auto 32px; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding: 20px 24px; }
+  .changes h2 { font-size:15px; font-weight:700; margin-bottom:12px; }
+  .changes ul { list-style:none; }
+  .changes li { font-size:13px; line-height:22px; padding:6px 0; border-bottom:1px dashed #eee; display:flex; gap:10px; }
+  .changes li:last-child { border-bottom:none; }
+  .changes .tag { flex:none; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; align-self:center; }
+  .changes .tag-new { background:#e7f5ec; color:#188a42; }
+  .changes .tag-chg { background:#fdf0e0; color:#c77417; }
+  .changes .tag-keep { background:#eef0f2; color:#555; }
+  .changes code { background:#f4f5f7; border-radius:4px; padding:1px 5px; font-size:12px; }
+
+  /* ── 双栏预览区 ── */
+  .themes { display:grid; grid-template-columns: 1fr 1fr; gap:28px; max-width: 1000px; margin: 0 auto; }
+  @media (max-width: 900px) { .themes { grid-template-columns: 1fr; } }
+
+  .theme-card { border-radius:16px; overflow:hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+  .theme-label { display:flex; align-items:center; justify-content:space-between; padding:12px 18px; font-size:14px; font-weight:700; }
+  .theme-label .hint { font-size:11px; font-weight:500; opacity:.6; }
+  .theme-light .theme-label { background:#e8eaee; color:#1f2937; }
+  .theme-dark .theme-label { background:#151719; color:#e5e7eb; }
+
+  .stage { position:relative; height: 620px; overflow:hidden; }
+  .theme-light .stage { background: linear-gradient(180deg, #f7f8fa 0%, #eef0f3 100%); }
+  .theme-dark .stage { background: linear-gradient(180deg, #1b1c1f 0%, #101114 100%); }
+
+  /* 模拟聊天区文字 */
+  .fake-chat { position:absolute; left:20px; top:24px; right:120px; font-size:12px; line-height:20px; }
+  .theme-light .fake-chat { color:rgba(15,17,21,.55); }
+  .theme-dark .fake-chat { color:rgba(249,250,251,.5); }
+  .fake-chat .row { margin-bottom:14px; padding:10px 12px; border-radius:10px; }
+  .theme-light .fake-chat .row { background:rgba(255,255,255,.7); }
+  .theme-dark .fake-chat .row { background:rgba(255,255,255,.04); }
+  .fake-chat .row b { font-weight:600; }
+  .fake-chat .row.q { }
+  .theme-light .fake-chat .row.q { background:rgb(228,237,253); }
+  .theme-dark .fake-chat .row.q { background:rgb(40,49,66); }
+
+  /* ══ 锚点面板（与插件 DOM 结构一致） ══ */
+  .anchors { position:absolute; top:50%; right:14px; transform:translateY(-50%); display:flex; flex-direction:column; align-items:flex-end; pointer-events:auto; }
+  .card { width:256px; max-height:560px; display:flex; flex-direction:column; overflow:hidden; border-radius:14px; }
+  .theme-light .card { background:var(--bg-overlay-light); border:1px solid var(--border-light); box-shadow:var(--shadow-light); }
+  .theme-dark  .card { background:var(--bg-overlay-dark); border:1px solid var(--border-dark); box-shadow:var(--shadow-dark); }
+
+  .qa-header { display:flex; align-items:center; gap:8px; padding:10px 8px 10px 12px; border-bottom:1px solid; }
+  .theme-light .qa-header { border-color:var(--border-light); }
+  .theme-dark  .qa-header { border-color:var(--border-dark); }
+  .qa-title { flex:1; min-width:0; font-size:13px; font-weight:600; line-height:20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:6px; }
+  .theme-light .qa-title { color:var(--text-primary-light); }
+  .theme-dark  .qa-title { color:var(--text-primary-dark); }
+  .qa-title svg { flex:none; }
+  .theme-light .qa-title svg { color:var(--brand-light); }
+  .theme-dark  .qa-title svg { color:var(--brand-dark); }
+  .qa-count { flex:none; min-width:20px; height:18px; padding:0 6px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:11px; line-height:18px; font-variant-numeric:tabular-nums; }
+  .theme-light .qa-count { background:var(--brand-soft-light); color:var(--brand-light); }
+  .theme-dark  .qa-count { background:var(--brand-soft-dark); color:var(--brand-dark); }
+  .qa-toggle { flex:none; width:28px; height:28px; border:none; border-radius:8px; background:transparent; display:grid; place-items:center; cursor:pointer; }
+  .theme-light .qa-toggle { color:var(--text-tertiary-light); }
+  .theme-dark  .qa-toggle { color:var(--text-tertiary-dark); }
+  .theme-light .qa-toggle:hover { background:var(--bg-hover-light); }
+  .theme-dark  .qa-toggle:hover { background:var(--bg-hover-dark); }
+
+  .qa-list { list-style:none; padding:6px; display:flex; flex-direction:column; gap:2px; overflow-y:auto; max-height:420px; }
+  .qa-item { display:flex; align-items:flex-start; gap:8px; width:100%; min-height:40px; padding:6px 8px; border:none; border-radius:9px; background:transparent; text-align:left; cursor:pointer; position:relative; }
+  .theme-light .qa-item { color:var(--text-secondary-light); }
+  .theme-dark  .qa-item { color:var(--text-secondary-dark); }
+  .theme-light .qa-item:hover { background:var(--bg-hover-light); }
+  .theme-dark  .qa-item:hover { background:var(--bg-hover-dark); }
+  .qa-item[data-active] .qa-text { font-weight:600; }
+  .theme-light .qa-item[data-active] { background:var(--bg-active-light); color:var(--text-primary-light); }
+  .theme-dark  .qa-item[data-active] { background:var(--bg-active-dark); color:var(--text-primary-dark); }
+  /* 激活态左侧品牌色指示条 */
+  .qa-item[data-active]::before { content:""; position:absolute; left:0; top:9px; bottom:9px; width:3px; border-radius:2px; }
+  .theme-light .qa-item[data-active]::before { background:var(--brand-light); }
+  .theme-dark  .qa-item[data-active]::before { background:var(--brand-dark); }
+  .qa-index { flex:none; min-width:18px; height:18px; margin-top:1px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:11px; line-height:18px; font-variant-numeric:tabular-nums; }
+  .theme-light .qa-index { color:var(--text-caption-light); }
+  .theme-dark  .qa-index { color:var(--text-caption-dark); }
+  .qa-item[data-active] .qa-index { font-weight:700; }
+  .theme-light .qa-item[data-active] .qa-index { background:var(--brand-light); color:#fff; }
+  .theme-dark  .qa-item[data-active] .qa-index { background:var(--brand-dark); color:rgb(15,17,21); }
+  .qa-text { flex:1; min-width:0; font-size:12px; line-height:18px; word-break:break-word; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+  .qa-empty { padding:10px 12px; font-size:12px; line-height:18px; }
+  .theme-light .qa-empty { color:var(--text-caption-light); }
+  .theme-dark  .qa-empty { color:var(--text-caption-dark); }
+  .qa-foot { flex:none; padding:6px 12px; font-size:11px; line-height:16px; border-top:1px solid; }
+  .theme-light .qa-foot { color:var(--text-caption-light); border-color:var(--border-light); }
+  .theme-dark  .qa-foot { color:var(--text-caption-dark); border-color:var(--border-dark); }
+
+  /* 收起胶囊 */
+  .pill { width:40px; min-height:44px; padding:8px 0; border-radius:999px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; cursor:pointer; }
+  .theme-light .pill { background:var(--bg-overlay-light); border:1px solid var(--border-light); box-shadow:var(--shadow-light); color:var(--text-secondary-light); }
+  .theme-dark  .pill { background:var(--bg-overlay-dark); border:1px solid var(--border-dark); box-shadow:var(--shadow-dark); color:var(--text-secondary-dark); }
+  .theme-light .pill:hover { border-color:var(--brand-light); color:var(--brand-light); }
+  .theme-dark  .pill:hover { border-color:var(--brand-dark); color:var(--brand-dark); }
+  .pill svg { width:14px; height:14px; }
+  .pill-count { font-size:11px; line-height:1; font-variant-numeric:tabular-nums; }
+  .theme-light .pill-count { color:var(--text-caption-light); }
+  .theme-dark  .pill-count { color:var(--text-caption-dark); }
+
+  /* 图例 */
+  .legend { margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; }
+  .legend .item { font-size:11px; padding:2px 8px; border-radius:6px; }
+  .theme-light .legend .item { background:rgba(15,17,21,.06); color:rgba(15,17,21,.7); }
+  .theme-dark .legend .item { background:rgba(255,255,255,.08); color:rgba(249,250,251,.75); }
+  .legend .item b { font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>提问锚点 · v2 设计稿</h1>
+  <div class="sub">基于 DSH 设计令牌（rc.8）· 亮色 / 暗色双主题 · 确认后实施</div>
+  <span class="badge">Design v2 — 待确认</span>
+</div>
+
+<div class="changes">
+  <h2>本次改动点</h2>
+  <ul>
+    <li><span class="tag tag-chg">改</span><span>卡片底色：亮色 <code>bg-overlay(bluish-150)</code> → <code>specific-menu(纯白)</code>；暗色 <code>bg-overlay(bluish-700)</code> → <code>specific-menu(bluish-800)</code>，更贴近 DSH 官方 overlay（ui-cordis 同款）</span></li>
+    <li><span class="tag tag-chg">改</span><span>边框：<code>border-l1</code> → <code>border-l2</code>（亮 rgba(0,0,0,.10) / 暗 rgba(255,255,255,.12)），面板层次更清晰</span></li>
+    <li><span class="tag tag-chg">改</span><span>阴影：<code>shadow-lv2</code> → <code>shadow-lv3</code>，悬浮感更强，与官方面板一致</span></li>
+    <li><span class="tag tag-new">新</span><span>头部标题前加品牌色锚点图标（SVG，随主题切换 deepseek-500/400）</span></li>
+    <li><span class="tag tag-new">新</span><span>计数徽标改为品牌色系：<code>state-business-tertiary</code> 底 + <code>state-business-primary</code> 文字</span></li>
+    <li><span class="tag tag-new">新</span><span>激活项：左侧 3px 品牌色指示条 + 浅品牌色背景（<code>state-business-tertiary</code>）+ 文本加粗</span></li>
+    <li><span class="tag tag-new">新</span><span>激活项序号：品牌色实心圆角块（亮色白字 / 暗色深字），非激活保持 caption 色</span></li>
+    <li><span class="tag tag-new">新</span><span>收起胶囊：加锚点图标，hover 时品牌色描边 + 品牌色图标</span></li>
+    <li><span class="tag tag-keep">保</span><span>布局/尺寸/圆角/3 行截断/滚动跟随/详情列避让逻辑不变</span></li>
+  </ul>
+</div>
+
+<div class="themes">
+
+  <!-- ════ 亮色 ════ -->
+  <div class="theme-card theme-light">
+    <div class="theme-label">☀️ 亮色主题 <span class="hint">DSH 默认（light）</span></div>
+    <div class="stage">
+      <div class="fake-chat">
+        <div class="row q"><b>Q1</b> 帮我设计一个待办应用的需求文档</div>
+        <div class="row">好的，我来梳理产品需求…</div>
+        <div class="row q"><b>Q2</b> 架构上拆成前端后端数据三块</div>
+        <div class="row">已拆分模块，接口定义如下…</div>
+        <div class="row q"><b>Q3</b> 编码阶段按 Sprint 推进</div>
+        <div class="row">当前 Sprint 2/4 进行中…</div>
+        <div class="row q"><b>Q4</b> 集成后做全量回归</div>
+        <div class="row">回归通过，进入验收…</div>
+      </div>
+      <div class="anchors">
+        <div class="card">
+          <div class="qa-header">
+            <span class="qa-title">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5c3.6 0 6.5 2.6 6.5 5.8 0 1.4-.5 2.7-1.3 3.8l.6 3-2.9-1.5c-.9.4-1.9.5-2.9.5-3.6 0-6.5-2.6-6.5-5.8S4.4 1.5 8 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="8" cy="7.3" r="1.6" stroke="currentColor" stroke-width="1.2"/></svg>
+              提问锚点
+            </span>
+            <span class="qa-count">4</span>
+            <button class="qa-toggle" aria-label="收起面板">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 10.5 8 5.5l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <ul class="qa-list">
+            <li><button class="qa-item" data-active><span class="qa-index">1</span><span class="qa-text">帮我设计一个待办应用的需求文档，覆盖用户故事、范围与非目标</span></button></li>
+            <li><button class="qa-item"><span class="qa-index">2</span><span class="qa-text">架构上拆成前端后端数据三块，给出模块边界与接口定义</span></button></li>
+            <li><button class="qa-item"><span class="qa-index">3</span><span class="qa-text">编码阶段按 Sprint 推进，每个部门只负责自己的文件</span></button></li>
+            <li><button class="qa-item"><span class="qa-index">4</span><span class="qa-text">集成后做全量回归，验收不过走修复路由</span></button></li>
+          </ul>
+          <div class="qa-foot">点击跳转到对应提问</div>
+        </div>
+      </div>
+      <div class="legend" style="position:absolute; left:20px; bottom:14px;">
+        <span class="item">① 品牌色图标</span><span class="item">② 品牌色计数徽标</span><span class="item">③ 激活项：指示条+浅底+实心序号</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 暗色 ════ -->
+  <div class="theme-card theme-dark">
+    <div class="theme-label">🌙 暗色主题 <span class="hint">DSH dark</span></div>
+    <div class="stage">
+      <div class="fake-chat">
+        <div class="row q"><b>Q1</b> 帮我设计一个待办应用的需求文档</div>
+        <div class="row">好的，我来梳理产品需求…</div>
+        <div class="row q"><b>Q2</b> 架构上拆成前端后端数据三块</div>
+        <div class="row">已拆分模块，接口定义如下…</div>
+        <div class="row q"><b>Q3</b> 编码阶段按 Sprint 推进</div>
+        <div class="row">当前 Sprint 2/4 进行中…</div>
+        <div class="row q"><b>Q4</b> 集成后做全量回归</div>
+        <div class="row">回归通过，进入验收…</div>
+      </div>
+      <div class="anchors">
+        <div class="card">
+          <div class="qa-header">
+            <span class="qa-title">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5c3.6 0 6.5 2.6 6.5 5.8 0 1.4-.5 2.7-1.3 3.8l.6 3-2.9-1.5c-.9.4-1.9.5-2.9.5-3.6 0-6.5-2.6-6.5-5.8S4.4 1.5 8 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="8" cy="7.3" r="1.6" stroke="currentColor" stroke-width="1.2"/></svg>
+              提问锚点
+            </span>
+            <span class="qa-count">4</span>
+            <button class="qa-toggle" aria-label="收起面板">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 10.5 8 5.5l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <ul class="qa-list">
+            <li><button class="qa-item" data-active><span class="qa-index">1</span><span class="qa-text">帮我设计一个待办应用的需求文档，覆盖用户故事、范围与非目标</span></button></li>
+            <li><button class="qa-item"><span class="qa-index">2</span><span class="qa-text">架构上拆成前端后端数据三块，给出模块边界与接口定义</span></button></li>
+            <li><button class="qa-item"><span class="qa-index">3</span><span class="qa-text">编码阶段按 Sprint 推进，每个部门只负责自己的文件</span></button></li>
+            <li><button class="qa-item"><span class="qa-index">4</span><span class="qa-text">集成后做全量回归，验收不过走修复路由</span></button></li>
+          </ul>
+          <div class="qa-foot">点击跳转到对应提问</div>
+        </div>
+      </div>
+      <div class="legend" style="position:absolute; left:20px; bottom:14px;">
+        <span class="item">① 品牌色图标</span><span class="item">② 品牌色计数徽标</span><span class="item">③ 激活项：指示条+浅底+实心序号</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
