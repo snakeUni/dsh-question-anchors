@@ -15,7 +15,9 @@ DeepSeek Harness Web 客户端插件，为当前会话提供右侧「提问锚�
 - 支持中英文，并跟随 DSH 界面语言
 - 自动适配深色和浅色主题
 
-![image1](./assets/image.png)
+| 亮色主题 | 暗色主题 |
+| :---: | :---: |
+| <img src="./assets/light.png" alt="亮色主题" height="180" /> | <img src="./assets/dark.png" alt="暗色主题" height="180" /> |
 
 ## 安装
 
