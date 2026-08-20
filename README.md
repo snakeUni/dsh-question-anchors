@@ -17,7 +17,7 @@ DeepSeek Harness Web 客户端插件，为当前会话提供右侧「提问锚�
 
 | 亮色主题 | 暗色主题 |
 | :---: | :---: |
-| <img src="./assets/light.png" alt="亮色主题" height="180" /> | <img src="./assets/dark.png" alt="暗色主题" height="180" /> |
+| <img src="./assets/light.png" alt="亮色主题" height="480" /> | <img src="./assets/dark.png" alt="暗色主题" height="480" /> |
 
 ## 安装
 
